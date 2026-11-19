@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+  <meta name="color-scheme" content="light">
+
+  <title>Chat</title>
+
+  <style>
+    @font-face {
+      font-family: "IBM Plex Sans";
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url("fonts/ibm-plex-sans-400.ttf") format("truetype");
+    }
+
+    @font-face {
+      font-family: "IBM Plex Sans";
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url("fonts/ibm-plex-sans-500.ttf") format("truetype");
+    }
+
+    @font-face {
+      font-family: "IBM Plex Sans";
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url("fonts/ibm-plex-sans-600.ttf") format("truetype");
+    }
+
+    :root {
+      color-scheme: light;
+      --bg: #F8F4F1;
+      --surface: #FFFFFF;
+      --surface-2: #EEF0F4;
+      --ink: #17202B;
+      --muted: #5A6473;
+      --line: #DCE1E8;
+      --blue: #2A67AD;
+      --body: "IBM Plex Sans", "Segoe UI", system-ui,
+        -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding-bottom: 60px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    body.notice-open {
+      overflow: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 3px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    /* Header */
+    .top-bar {
+      height: 56px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #000000;
+      color: #FFFFFF;
+    }
+
+    .top-bar :focus-visible {
+      outline-color: #FFFFFF;
+    }
+
+    .home-link {
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      color: #FFFFFF;
+    }
+
+    .home-link:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .home-icon {
+      display: block;
+    }
+
+    .logout-btn {
+      min-height: 44px;
+      padding: 6px 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #FFFFFF;
+      border-radius: 8px;
+      background: #FFFFFF;
+      color: #000000;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+    }
+
+    .logout-btn:hover {
+      background: var(--surface-2);
+      border-color: var(--surface-2);
+    }
+
+    /* Logo */
+    .logo-row {
+      padding: 16px 20px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .logo-row img {
+      display: block;
+      width: auto;
+      height: 48px;
+      max-width: 100%;
+    }
+
+    /* Chat */
+    .chat-panel {
+      width: min(900px, calc(100% - 48px));
+      margin: 24px auto 0;
+    }
+
+    #log {
+      height: 360px;
+      overflow-y: auto;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      line-height: 1.6;
+    }
+
+    #log p {
+      margin: 0 0 16px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    #log p:last-child {
+      margin-bottom: 0;
+    }
+
+    #log strong {
+      font-weight: 600;
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .chat-input {
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid #7A8491;
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
+    }
+
+    .send-btn,
+    .save-btn {
+      min-height: 44px;
+      padding: 10px 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+
+    .send-btn {
+      border: 1px solid #000000;
+      background: #000000;
+      color: #FFFFFF;
+    }
+
+    .send-btn:not(:disabled):hover {
+      background: #222222;
+    }
+
+    .save-btn {
+      border: 1px solid #17202B;
+      background: #FFFFFF;
+      color: #17202B;
+    }
+
+    .save-btn:hover {
+      background: var(--surface-2);
+    }
+
+    .save-status {
+      min-height: 24px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      overflow-wrap: anywhere;
+    }
+
+    /* Friendly reminder popup */
+    .notice-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.55);
+    }
+
+    .notice-box {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
+      padding: 56px 32px 32px;
+      border-radius: 12px;
+      background: #FFFFFF;
+      color: #17202B;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    .notice-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #17202B;
+      font-size: 22px;
+    }
+
+    .notice-close:hover {
+      background: var(--surface-2);
+    }
+
+    .notice-title {
+      margin: 0 0 12px;
+      font-size: 22px;
+      line-height: 1.3;
+      font-weight: 600;
+    }
+
+    .notice-text {
+      margin: 0 0 24px;
+    }
+
+    .notice-save {
+      border-color: #000000;
+      background: #000000;
+      color: #FFFFFF;
+    }
+
+    .notice-save:hover {
+      background: #222222;
+    }
+
+    .notice-box .save-status {
+      margin-top: 16px;
+    }
+
+    @media (max-width: 700px) {
+      .chat-panel {
+        width: calc(100% - 32px);
+      }
+
+      .logo-row {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      #log {
+        padding: 16px;
+      }
+
+      .chat-form {
+        flex-wrap: wrap;
+      }
+
+      .chat-input {
+        flex-basis: 100%;
+      }
+
+      .send-btn,
+      .chat-form .save-btn {
+        flex: 1;
+      }
+
+      .notice-box {
+        padding-left: 24px;
+        padding-right: 24px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="page-content">
+    <header class="top-bar">
+      <a
+        class="home-link"
+        href="index.html"
+        aria-label="Home"
+      >
+        <svg
+          class="home-icon"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            fill="#FFFFFF"
+            d="M12 3 2 12h3v8h5v-6h4v6h5v-8h3L12 3z"
+          />
+        </svg>
+      </a>
+
+      <a class="logout-btn" href="index.html">
+        logout
+      </a>
+    </header>
+
+    <div class="logo-row">
+      <img src="logo.png" alt="Logo">
+    </div>
+
+    <main class="chat-panel">
+      <section
+        id="log"
+        role="log"
+        aria-label="Conversation"
+        aria-live="polite"
+        aria-relevant="additions text"
+        tabindex="0"
+      ></section>
+
+      <form
+        id="chat-form"
+        class="chat-form"
+        autocomplete="off"
+      >
+        <input
+          id="message"
+          class="chat-input"
+          type="text"
+          name="message"
+          aria-label="Message"
+          placeholder="Type your message"
+          required
+        >
+
+        <button
+          id="send"
+          class="send-btn"
+          type="submit"
+        >
+          Send
+        </button>
+
+        <!-- Always available; does not submit the chat form. -->
+        <button
+          id="save-consultation"
+          class="save-btn"
+          type="button"
+        >
+          Save consultation
+        </button>
+      </form>
+
+      <p
+        id="save-status"
+        class="save-status"
+        role="status"
+        aria-live="polite"
+      ></p>
+    </main>
+  </div>
+
+  <!-- Reminder only: saving is also available beside Send. -->
+  <div
+    id="notice"
+    class="notice-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="notice-title"
+    aria-describedby="notice-text"
+    hidden
+  >
+    <div class="notice-box">
+      <button
+        id="notice-close"
+        class="notice-close"
+        type="button"
+        aria-label="Close reminder"
+      >✕</button>
+
+      <h2 id="notice-title" class="notice-title">
+        Remember to save
+      </h2>
+
+      <p id="notice-text" class="notice-text">
+        Please press the button below to save the consultation.
+        You can also save at any time using the button beside Send.
+      </p>
+
+      <button
+        id="notice-save"
+        class="save-btn notice-save"
+        type="button"
+      >
+        Save consultation
+      </button>
+
+      <p
+        id="notice-save-status"
+        class="save-status"
+        role="status"
+        aria-live="polite"
+      ></p>
+    </div>
+  </div>
+
+  <script type="module">
+    const $ = (id) => document.getElementById(id);
+
+    // Conversation context sent to the chat backend.
+    const messages = [];
+
+    // User messages and actual bot replies available for saving.
+    // This does not include the server-side master prompt.
+    const transcript = [];
+
+    const COMPLETION_PHRASE =
+      "the consultation is now complete";
+
+    let sending = false;
+    let savingConsultation = false;
+    let noticeShown = false;
+    let previousFocus = null;
+
+    function scrollToLatest() {
+      $("log").scrollTop = $("log").scrollHeight;
+    }
+
+    function line(role, text = "") {
+      const paragraph = document.createElement("p");
+      const label = document.createElement("strong");
+      const span = document.createElement("span");
+
+      label.textContent = `${role}: `;
+      span.textContent = text;
+
+      paragraph.append(label, span);
+      $("log").append(paragraph);
+
+      scrollToLatest();
+
+      return span;
+    }
+
+    function setSaveStatus(text) {
+      $("save-status").textContent = text;
+      $("notice-save-status").textContent = text;
+    }
+
+    function setSavingState(isSaving) {
+      savingConsultation = isSaving;
+
+      for (const id of [
+        "save-consultation",
+        "notice-save"
+      ]) {
+        const button = $(id);
+
+        // Keep the buttons focusable while preventing repeat requests.
+        button.setAttribute(
+          "aria-disabled",
+          String(isSaving)
+        );
+
+        button.textContent = isSaving
+          ? "Saving…"
+          : "Save consultation";
+      }
+    }
+
+    function showSaveNotice() {
+      // Friendly reminder: show once per page load.
+      if (noticeShown) return;
+
+      noticeShown = true;
+      previousFocus = document.activeElement;
+
+      $("notice").hidden = false;
+      $("page-content").inert = true;
+
+      document.body.classList.add("notice-open");
+      $("notice-save").focus();
+    }
+
+    function closeSaveNotice() {
+      $("notice").hidden = true;
+      $("page-content").inert = false;
+
+      document.body.classList.remove("notice-open");
+
+      if (
+        previousFocus instanceof HTMLElement &&
+        previousFocus.isConnected &&
+        !previousFocus.matches(":disabled")
+      ) {
+        previousFocus.focus();
+      } else {
+        $("message").focus();
+      }
+    }
+
+    $("notice-close").addEventListener(
+      "click",
+      closeSaveNotice
+    );
+
+    $("notice").addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeSaveNotice();
+        return;
+      }
+
+      // Keep keyboard focus inside the reminder while open.
+      if (event.key === "Tab") {
+        const first = $("notice-close");
+        const last = $("notice-save");
+
+        if (
+          event.shiftKey &&
+          document.activeElement === first
+        ) {
+          event.preventDefault();
+          last.focus();
+        } else if (
+          !event.shiftKey &&
+          document.activeElement === last
+        ) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    });
+
+    async function saveConsultation() {
+      // Ignore additional clicks while a save is already running.
+      if (savingConsultation) return;
+
+      if (transcript.length === 0) {
+        setSaveStatus(
+          "There is no consultation to save yet. Send a message first."
+        );
+        return;
+      }
+
+      // Save a snapshot of the conversation at click time.
+      // If the bot is still replying, that pending reply is not included.
+      const messagesToSave = transcript.map(
+        ({ role, content }) => ({
+          role,
+          content
+        })
+      );
+
+      const replyWasPending = sending;
+
+      setSavingState(true);
+
+      setSaveStatus(
+        replyWasPending
+          ? "Saving the current conversation. The pending reply is not included."
+          : "Saving your consultation…"
+      );
+
+      try {
+        const response = await fetch(
+          "/api/save-consultation",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              messages: messagesToSave
+            })
+          }
+        );
+
+        const data = await response
+          .json()
+          .catch(() => null);
+
+        if (!response.ok || !data?.success) {
+          throw new Error(
+            data?.error ||
+            "Could not save the consultation."
+          );
+        }
+
+        setSaveStatus(
+          `Consultation saved. Record ID: ${data.id}.` +
+          (
+            replyWasPending
+              ? " Save again after the bot finishes to include its reply."
+              : ""
+          )
+        );
+      } catch (error) {
+        setSaveStatus(
+          error.message ||
+          "Could not save the consultation. Please try again."
+        );
+      } finally {
+        setSavingState(false);
+      }
+    }
+
+    // Both buttons perform the same save operation.
+    $("save-consultation").addEventListener(
+      "click",
+      saveConsultation
+    );
+
+    $("notice-save").addEventListener(
+      "click",
+      saveConsultation
+    );
+
+    $("chat-form").addEventListener(
+      "submit",
+      async (event) => {
+        event.preventDefault();
+
+        const text = $("message").value.trim();
+
+        if (!text || sending) return;
+
+        sending = true;
+        $("message").value = "";
+        $("send").disabled = true;
+
+        line("You", text);
+
+        const userMessage = {
+          role: "user",
+          content: text
+        };
+
+        messages.push(userMessage);
+        transcript.push({ ...userMessage });
+
+        const replySpan = line("Bot", "Thinking…");
+
+        try {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ messages })
+          });
+
+          const raw = await response.text();
+          let data;
+
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            throw new Error(
+              `/api/chat returned an invalid response (${response.status}).`
+            );
+          }
+
+          if (!response.ok) {
+            throw new Error(
+              (
+                typeof data?.error === "string" &&
+                data.error
+              ) ||
+              `Request failed (${response.status}).`
+            );
+          }
+
+          if (
+            typeof data?.reply !== "string" ||
+            !data.reply.trim()
+          ) {
+            throw new Error(
+              "The server did not return a valid reply."
+            );
+          }
+
+          // Display the bot's reply as plain text.
+          replySpan.textContent = data.reply;
+
+          const assistantMessage = {
+            role: "assistant",
+            content: data.reply
+          };
+
+          messages.push(assistantMessage);
+          transcript.push({ ...assistantMessage });
+
+          // Reminder only. Saving is always available.
+          // Match the exact phrase, with identical case and spacing.
+          if (data.reply.includes(COMPLETION_PHRASE)) {
+            showSaveNotice();
+          }
+        } catch (error) {
+          replySpan.textContent =
+            `[Error: ${error.message}]`;
+
+          // Remove the failed request from future API context.
+          // Keep the user's visible message in the saved transcript.
+          if (messages.at(-1) === userMessage) {
+            messages.pop();
+          }
+
+          if (!$("message").value) {
+            $("message").value = text;
+          }
+        } finally {
+          sending = false;
+          $("send").disabled = false;
+
+          // Never take focus away from the open reminder.
+          // Also preserve focus if the user is operating Save.
+          if (
+            $("notice").hidden &&
+            document.activeElement !==
+              $("save-consultation")
+          ) {
+            $("message").focus();
+          }
+
+          scrollToLatest();
+        }
+      }
+    );
+  </script>
+</body>
+</html>
